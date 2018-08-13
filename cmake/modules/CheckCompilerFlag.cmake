@@ -1,0 +1,25 @@
+include_guard(GLOBAL)
+
+include(CMakePushCheckState)
+include(CheckCXXCompilerFlag)
+include(CheckCCompilerFlag)
+
+function (check_compiler_flag flag variable)
+  set(option QUIET)
+  set(single LANGUAGE)
+  set(multi)
+  cmake_parse_arguments(ARG "${option}" "${single}" "${multi}" ${ARGN})
+
+  cmake_push_check_state()
+  if (ARG_QUIET)
+    set(CMAKE_REQUIRED_QUIET ON)
+  endif ()
+
+  if (${ARG_LANGUAGE} STREQUAL "CXX")
+    check_cxx_compiler_flag(${flag} ${variable})
+  elseif (${ARG_LANGUAGE} STREQUAL "C")
+    check_c_compiler_flag(${flag} ${variable})
+  endif ()
+  cmake_pop_check_state()
+  set(${variable} ${${variable}} PARENT_SCOPE)
+endfunction ()
