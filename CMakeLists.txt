@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
-project(godot VERSION 3.0.0 LANGUAGES C CXX)
+project(godot
+  VERSION 3.1
+  DESCRIPTION "The Godot Game Engine"
+  HOMEPAGE_URL "https://godotengine.org/"
+  LANGUAGES C CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/packages)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -27,9 +31,19 @@ include(CheckHeaders)
 
 find_package(PkgConfig)
 
+# Tools
+find_package(ClangFormat)
+find_package(ClangCheck)
+find_package(ClangTidy)
+find_package(CppCheck)
+find_package(SCCache)
+find_package(CCache)
+find_package(IWYU)
+
+# Dependencies
 find_package(Bullet COMPONENTS Collision SoftBody Dynamics Math)
 find_package(Python COMPONENTS Interpreter Development)
-find_package(PCRE2 COMPONENTS UTF8 UTF16)
+find_package(PCRE2 COMPONENTS UTF8 UTF16 UTF32)
 find_package(WebSockets)
 find_package(MiniUPnPC)
 find_package(Freetype)
@@ -51,10 +65,27 @@ find_package(PNG)
 
 option(WITH_TOOLS "Build the Godot editor" ON)
 
-option(USE_UBSAN "Enable undefined behavior sanitizer" OFF)
-option(USE_ASAN "Enable address sanitizer" OFF)
-option(USE_TSAN "Use thread sanitizer" OFF)
+option(PACKAGE_DMG "Create a MacOS DMG Image")
+option(PACKAGE_APP "Create a Linux AppImage")
+option(PACKAGE_DEB "Create a Debian Package")
+option(PACKAGE_RPM "Create an RPM Package")
+option(PACKAGE_MSI "Create a Windows MSI")
+option(PACKAGE_PKG "Create a FreeBSD pkg")
+
+option(ARCHIVE_TBZ2 "Create a .tar.bz2 archive")
+option(ARCHIVE_TGZ "Create a .tar.gz archive")
+option(ARCHIVE_TXZ "Create a .tar.xz archive")
+option(ARCHIVE_TZ "Create a .tar.Z archive")
+option(ARCHIVE_ZIP "Create a .zip archive")
+option(ARCHIVE_7Z "Create a .7z archive")
+
+option(SANITIZE_UNDEFINED "Use the Undefined Behavior Sanitizer" OFF)
+option(SANITIZE_ADDRESS "Use the Address Aanitizer" OFF)
+option(SANITIZE_THREAD "Use the Thread Sanitizer" OFF)
+
 option(USE_LTO "Use link-time optimization" OFF)
+option(USE_SCCACHE "Use the SCCache compiler caching tool")
+option(USE_CCACHE "Use the CCache compiler caching tool")
 
 option(USE_BUILTIN_LIBWEBSOCKETS "Use the built-in libwebsockets library" ON) #find_package
 option(USE_BUILTIN_THEKLA_ATLAS "Use the built-in thekla_atlas library" ON)
@@ -99,7 +130,25 @@ check_ipo_supported(RESULT HAS_IPO_SUPPORT LANGUAGES CXX C)
 check_headers(vector HAS_CXX_VECTOR LANGUAGE CXX)
 check_headers(map HAS_CXX_MAP LANGUAGE CXX)
 
-add_executable(godot WIN32 main/main.cpp)
+if (USE_SCCACHE AND SCCACHE_FOUND)
+  set(CMAKE_CXX_COMPILER_LAUNCHER sccache)
+  set(CMAKE_C_COMPILER_LAUNCHER sccache)
+elseif(USE_CCACHE AND CCACHE_FOUND)
+  set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+  set(CMAKE_C_COMPILER_LAUNCHER ccache)
+endif()
+
+if (USE_IWYU AND IWYU_FOUND)
+  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu)
+  set(CMAKE_C_INCLUDE_WHAT_YOU_USE iwyu)
+endif()
+
+if (USE_CPPCHECK AND CPPCHECK_FOUND)
+  set(CMAKE_CXX_CPPCHECK cppcheck)
+  set(CMAKE_C_CPPCHECK cppcheck)
+endif()
+
+add_executable(godot WIN32 MACOSX_BUNDLE main/main.cpp)
 
 add_library(godot-common INTERFACE)
 
@@ -116,17 +165,18 @@ add_library(regex32)
 add_library(regex16)
 add_library(nanosvg)
 
-# Driver checks/notes
+# Driver checks/notes -- move to elsewhere
 check_include_files("mtent.h" HAVE_MNTENT LANGUAGE C)
 
 target_include_directories(godot-common
   INTERFACE
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/core
-    ${PROJECT_SOURCE_DIR}/core/math
     $<$<PLATFORM_ID:Windows>:${PROJECT_SOURCE_DIR}/platform/windows>
     $<$<PLATFORM_ID:Darwin>:${PROJECT_SOURCE_DIR}/platform/osx>
-    $<$<PLATFORM_ID:Linux>:${PROJECT_SOURCE_DIR}/platform/x11>)
+    $<$<PLATFORM_ID:Linux>:${PROJECT_SOURCE_DIR}/platform/x11>
+    ${PROJECT_SOURCE_DIR}/core/math
+    ${PROJECT_SOURCE_DIR}/core
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_BINARY_DIR}/generated)
 
 target_include_directories(godot-visual-script
   PUBLIC
@@ -250,7 +300,7 @@ target_link_libraries(godot
     $<$<CXX_COMPILER_ID:MSVC>:dsound>
     $<$<CXX_COMPILER_ID:MSVC>:d3d9>)
 
-if (CLANG_FORMAT_FOUND)
+if (ClangFormat_FOUND)
   add_custom_target(format
     COMMAND clang::format -i -style=file -p ${PROJECT_BINARY_DIR}
     COMMENT "Running clang-format"
@@ -258,7 +308,7 @@ if (CLANG_FORMAT_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
 
-if (CLANG_TIDY_FOUND)
+if (ClangTidy_FOUND)
   add_custom_target(tidy
     COMMAND clang::tidy -p ${PROJECT_BINARY_DIR}
     COMMENT "Running clang-tidy"
@@ -266,7 +316,7 @@ if (CLANG_TIDY_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
 
-if (CLANG_CHECK_FOUND)
+if (ClangCheck_FOUND)
   add_custom_target(check
     COMMAND clang::check -p ${PROJECT_BINARY_DIR}
     COMMENT "Running clang-check"
@@ -283,7 +333,7 @@ if (IWYU_FOUND)
 endif()
 
 if (BLOATY_FOUND)
-  add_custom_target(bloaty
+  add_custom_target(report-bloat
     COMMAND bloaty
     COMMENT "Running bloaty mcbloatface"
     VERBATIME USES_TERMINAL

@@ -1,0 +1,22 @@
+{% import 'gdnative.jinja' as gdn -%}
+/* THIS FILE IS GENERATED DO NOT EDIT */
+#include <gdnative/gdnative.h>
+#include <nativescript/godot_nativescript.h>
+#include <pluginscript/godot_pluginscript.h>
+#include <android/godot_android.h>
+#include <arvr/godot_arvr.h>
+
+#include <gdnative_api_struct.gen.h>
+
+extern "C" {
+
+{{gdn.core_api}}* {{gdn.core_wrapper}} = NULL;
+{% for ext in extensions -%}
+{{gdn.struct_name(ext.name, ext)}}* {{gdn.wrapper(ext)}} = NULL;
+{% endfor -%}
+
+{% for ext in extensions %}
+  {% for fn in ext.api %}{{gdn.function_def(ext, fn)}}{% endfor %}
+{% endfor %}
+
+} /* extern "C" */

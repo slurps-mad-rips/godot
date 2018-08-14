@@ -1,0 +1,22 @@
+{% import 'gdnative.jinja' as gdn -%}
+/* THIS FILE IS GENERATED DO NOT EDIT */
+#include <gdnative_api_struct.gen.h>
+
+{% for ext in extensions %}
+{{gdn.extension_struct_definition(ext)}}
+{% endfor -%}
+
+{{gdn.api}} const* gdnative_extensions_pointers[] = {
+  {% for ext in extensions %}
+  ({{gdn.api}}*)&{{gdn.struct_instance(ext.name, ext)}},
+  {% endfor %}
+};
+
+extern {{gdn.core_api}} const api_struct = {
+  GDNATIVE_{{core.type}},
+  { {{core.version.major}}, {{core.version.minor}} },
+  NULL,
+  {{ extensions|count }},
+  gdnative_extensions_pointers,
+  {{core.api|map(attribute='name')|join(',\n  ')}}
+};

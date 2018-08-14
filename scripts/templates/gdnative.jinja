@@ -1,0 +1,84 @@
+{% set core_wrapper = '_gdnative_wrapper_api_struct' -%}
+{%- set core_api = 'godot_gdnative_core_api_struct' -%}
+{%- set version = 'godot_gdnative_api_version' -%}
+{%- set api = 'godot_gdnative_api_struct' -%}
+
+{%- macro struct_version(ext, include_version=False) -%}
+{%- if include_version -%}_{{ext.version.major}}_{{ext.version.minor}}{%- endif -%}
+{%- endmacro -%}
+
+{%- macro struct_name(name, ext, include_version=False) %}
+godot_gdnative_ext_{{name}}{{struct_version(ext, include_version)}}_api_struct
+{%- endmacro %}
+
+{%- macro struct_instance(name, ext, include_version=False) %}
+api_extension_{{name}}{{struct_version(ext, include_version)}}_struct
+{%- endmacro %}
+
+{%- macro extension_struct_definition(ext, name=None, include_version=False) %}
+  {%- set name = name or ext.name -%}
+  {%- if ext.next -%}
+{{extension_struct_definition(ext.next, name, include_version=True)}}
+  {% endif -%}
+extern {{struct_name(name, ext, include_version)}} const {{struct_instance(name, ext, include_version)}} = {
+    GDNATIVE_EXT_{{ext.type}},
+    { {{ext.version.major}}, {{ext.version.minor}} },
+    {% if not ext.next %}
+    NULL
+    {%- else %}
+    ({{api}} const*)&{{struct_instance(name, ext.next, True)}}
+    {%-endif %},
+    {{ext.api|map(attribute='name')|join(',\n    ')}}
+};
+{% endmacro %}
+
+{%- macro extension_struct(ext, name=None, include_version=False) %}
+  {%- set name = name or ext.name -%}
+  {%- set struct -%}{{struct_name(name, ext, include_version)}}{%- endset %}
+  {%- if ext.next -%}
+  {{extension_struct(ext.next, name, include_version=True)}}
+  {% endif -%}
+typedef struct {{struct}} {
+  unsigned int type;
+  {{version}} version;
+  {{api}} const* next;
+  {% for function in ext.api %}
+  {{function_decl(function)}}
+  {% endfor %}
+} {{struct}}; 
+{% endmacro %}
+
+{%- macro ext_api_struct(ext, name=None, include_version=False) -%}
+{%- set name = name or ext.name -%}
+godot_gdnative_ext_{{ext.name}}{{struct_version(ext, include_version)}}_api_struct
+{%- endmacro %}
+
+{%- macro wrapper(ext) -%}
+  _gdnative_wrapper_{{ext.name}}_api_struct
+{%- endmacro -%}
+
+{%- macro signature(args) -%}
+  {%- set comma = joiner(', ') -%}
+  {%- for type, name in args -%}
+    {%- set fixed_type = type.replace(' *', '*') -%}
+    {{ comma() }}{{ "%s %s" | format(fixed_type, name) }}
+  {%- endfor -%}
+{%- endmacro -%}
+
+{%- macro arguments(args) -%}
+  {%- set comma = joiner(', ') -%}
+  {%- for _, name in args -%}
+    {{ comma() }}{{ name }}
+  {%- endfor -%}
+{%- endmacro -%}
+
+{%- macro function_decl(fn) -%}
+{{fn.return_type|replace(' *', '*')}} (*{{fn.name}})({{signature(fn.arguments)}});
+{%- endmacro -%}
+
+{% macro function_def(ext, fn) %}
+
+{{fn.return_type}} {{fn.name}}({{signature(fn.arguments)}}) {
+  return {{wrapper(ext)}}->{{fn.name}}({{arguments(fn.arguments)}});
+}
+{% endmacro -%}

@@ -1,17 +1,20 @@
 include_guard(GLOBAL)
 
-# TODO: Make an ImportProgram.cmake file
 # TODO: Support importing with specific configurations
 # TODO: Support importing with specific library types
 # TODO: Support importing Object File libraries
 
 function (import_library name)
-  set(option)
+  set(option GLOBAL)
   set(single LOCATION)
   set(multi INCLUDES DEFINITIONS FLAGS FEATURES LIBRARIES)
   cmake_parse_arguments(ARG "${option}" "${single}" "${multi}" ${ARGN})
 
   list(APPEND properties IMPORTED_LOCATION ${ARG_LOCATION})
+
+  if (ARG_GLOBAL)
+    set(ARG_GLOBAL GLOBAL)
+  endif()
 
   if (ARG_DEFINITIONS)
     list(APPEND properties INTERFACE_COMPILE_DEFINITIONS ${ARG_DEFINITIONS})
@@ -33,6 +36,6 @@ function (import_library name)
     list(APPEND properties INTERFACE_LINK_LIBRARIES ${ARG_LIBRARIES})
   endif()
 
-  add_library(${name} UNKNOWN IMPORTED)
+  add_library(${name} UNKNOWN IMPORTED ${ARG_GLOBAL})
   set_target_properties(${name} PROPERTIES ${properties})
 endfunction ()

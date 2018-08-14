@@ -1,0 +1,62 @@
+{% import 'gdnative.jinja' as gdn -%}
+/* THIS FILE IS GENERATED FROM A TEMPLATE */
+#ifndef GODOT_GDNATIVE_API_STRUCT_H
+#define GODOT_GDNATIVE_API_STRUCT_H
+
+#include <gdnative/gdnative.h>
+#include <nativescript/godot_nativescript.h>
+#include <pluginscript/godot_pluginscript.h>
+#include <android/godot_android.h>
+#include <arvr/godot_arvr.h>
+
+#define GDNATIVE_API_INIT(options) do { \
+  extern {{gdn.core_api}} const* {{gdn.core_wrapper}}; \
+  {% for ext in extensions %}
+  extern {{gdn.ext_api_struct(ext)}} const* {{ gdn.wrapper(ext) }}; \
+  {% endfor %}
+  {{gdn.core_wrapper}} = options->api_struct; \
+  {{gdn.api}} const** extensions = {{gdn.core_wrapper}}->extensions; \
+  unsigned int count = {{gdn.core_wrapper}}->num_extensions; \
+  for (unsigned int idx = 0; idx < count; idx++) { \
+    godot_gdnative_api_struct const* extension = extensions[idx]; \
+    switch (extension->type) { \
+    {% for ext in extensions %}
+      case GDNATIVE_EXT_{{ext.type}}: \
+        {{gdn.wrapper(ext)}} = ({{gdn.ext_api_struct(ext)}} const*)(extension); \
+        break; \
+    {% endfor %}
+    } \
+  } \
+} while(0)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum GDNATIVE_API_TYPES {
+  GDNATIVE_{{core.type}},
+  {% for ext in extensions %}
+  GDNATIVE_EXT_{{ext.type}},
+  {% endfor %}
+};
+
+{% for ext in extensions -%}
+{{gdn.extension_struct(ext)}}
+{% endfor -%}
+
+typedef struct {{gdn.core_api}} {
+  unsigned int type;
+  {{gdn.version}} version;
+  {{gdn.api}} const* next;
+  unsigned int num_extensions;
+  {{gdn.api}} const** extensions;
+  {% for function in core.api %}
+  {{gdn.function_decl(function)}}
+  {% endfor %}
+} {{gdn.core_api}};
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* GODOT_GDNATIVE_API_STRUCT_H */
