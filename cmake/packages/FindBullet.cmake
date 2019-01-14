@@ -7,6 +7,15 @@ include(Hide)
 # The FindBullet that comes with CMake does not follow the modern naming
 # convention. Additionally, it doesn't export any other modules.
 
+# For backwards compatibility with Scons, we use pkg-config
+# The primary question is *where* and *when* should we use it? After the new
+# behavior?
+# Seems reasonable, however, how can we insure that the find_package_handle
+# call works well with it?
+#if (PKG_CONFIG_FOUND)
+#  pkg_search_modules(Bullet IMPORTED_TARGET bullet)
+#endif()
+
 push_find_state(Bullet)
 find_library(BULLET_DYNAMICS_LIBRARY NAMES BulletDynamics ${FIND_OPTIONS})
 find_library(BULLET_COLLISION_LIBRARY NAMES BulletCollision ${FIND_OPTIONS})
@@ -53,6 +62,15 @@ if (BULLET_MATH_LIBRARY)
     LOCATION ${BULLET_MATH_LIBRARY}
     INCLUDES ${BULLET_INCLUDE_DIR})
 endif()
+
+add_library(Bullet INTERFACE)
+target_link_libraries(Bullet
+  INTERFACE
+    $<TARGET_NAME_IF_EXISTS:PkgConfig::Bullet>
+    $<TARGET_NAME_IF_EXISTS:Bullet::Collision>
+    $<TARGET_NAME_IF_EXISTS:Bullet::SoftBody>
+    $<TARGET_NAME_IF_EXISTS:Bullet::Dynamics>
+    $<TARGET_NAME_IF_EXISTS:Bullet::Math>)
 
 hide(BULLET COLLISION_LIBRARY SOFTBODY_LIBRARY DYNAMICS_LIBRARY MATH_LIBRARY)
 hide(BULLET INCLUDE_DIR)

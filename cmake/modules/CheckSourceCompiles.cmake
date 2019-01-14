@@ -5,6 +5,7 @@ include(CheckCXXSourceCompiles)
 include(CheckCSourceCompiles)
 
 # TODO: Handle "code" being a file
+# TODO: Perhaps rename this to check_code_compiles, or make a check_file_compiles
 function (check_source_compiles code variable)
   set(option QUIET)
   set(single LANGUAGE)

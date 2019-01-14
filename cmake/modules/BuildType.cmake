@@ -12,4 +12,3 @@ if (NOT CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     Debug Release MinSizeRel RelWithDebInfo)
 endif ()
-  

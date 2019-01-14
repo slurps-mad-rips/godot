@@ -4,10 +4,11 @@
 #define GODOT_GDNATIVE_API_STRUCT_H
 
 #include <gdnative/gdnative.h>
-#include <nativescript/godot_nativescript.h>
-#include <pluginscript/godot_pluginscript.h>
 #include <android/godot_android.h>
 #include <arvr/godot_arvr.h>
+#include <nativescript/godot_nativescript.h>
+#include <pluginscript/godot_pluginscript.h>
+#include <videodecoder/godot_videodecoder.h>
 
 #define GDNATIVE_API_INIT(options) do { \
   extern {{gdn.core_api}} const* {{gdn.core_wrapper}}; \

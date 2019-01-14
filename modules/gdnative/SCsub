@@ -26,11 +26,6 @@ from platform_methods import run_in_subprocess
 import gdnative_builders
 import sys
 
-<<<<<<< HEAD
-_, gensource = env_gdnative.CommandNoCache(['include/gdnative_api_struct.gen.h', 'gdnative_api_struct.gen.cpp'],
-                               'gdnative_api.json', run_in_subprocess(gdnative_builders.build_gdnative_api_struct))
-env_gdnative.add_source_files(env.modules_sources, [gensource])
-=======
 def root(path): return env.GetBuildPath('#/{}'.format(path))
 
 def jinjafy (output, input, template, directory):
@@ -40,7 +35,7 @@ def jinjafy (output, input, template, directory):
         template=root(template),
         script=root('scripts/gdnative-generator.py'))
     command = '@"{executable}" {script} -i $SOURCE -o $TARGET -t $TEMPLATE -d {directory}'
-    result = gdn_env.Command(output, input, command.format(**args), TEMPLATE=template)
+    result = env_gdnative.Command(output, input, command.format(**args), TEMPLATE=template)
     env.NoCache(result)
     env.Depends(output, env.Glob('{}/*.jinja'.format(root(directory))))
     env.Depends(output, root(template))
@@ -58,22 +53,17 @@ gensource = jinjafy(
     'scripts/templates/gdnative-api-struct.cpp.in',
     'scripts/templates')
 
-gdn_env.add_source_files(env.modules_sources, [gensource])
->>>>>>> Added pipenv as a dependency (see commit message)
+env_gdnative.add_source_files(env.modules_sources, [gensource])
 
 env.use_ptrcall = True
 
 
 if ARGUMENTS.get('gdnative_wrapper', False):
-<<<<<<< HEAD
-    gensource, = env_gdnative.CommandNoCache('gdnative_wrapper_code.gen.cpp', 'gdnative_api.json', run_in_subprocess(gdnative_builders.build_gdnative_wrapper_code))
-=======
     gensource, = jinjafy(
         'gdnative_wrapper_code.gen.cpp',
         'gdnative_api.json',
         'scripts/templates/gdnative-wrapper-code.cpp.in',
         'scripts/templates')
->>>>>>> Added pipenv as a dependency (see commit message)
 
     gd_wrapper_env = env.Clone()
     gd_wrapper_env.Append(CPPPATH=['#modules/gdnative/include/'])

@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "godot"
+version = "0.1.0"
+description = "Godot Build System Tools and Scripts"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.5"
+Jinja2 = "^2.10"
+
+[tool.poetry.dev-dependencies]
+cmake = "^3.12"
+ninja = "^1.8"
+jinja2 = "^2.10"
+towncrier = "^18.6"

@@ -8,6 +8,10 @@ project(godot
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/packages)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
+if (NOT CMAKE_BUILD_TYPE)
+  message(FATAL_ERROR "CMAKE_BUILD_TYPE has not been explicitly set")
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CMakePackageConfigHelpers)
@@ -32,6 +36,8 @@ include(CheckHeaders)
 find_package(PkgConfig)
 
 # Tools
+find_package(Python REQUIRED COMPONENTS Interpreter Development)
+find_package(Poetry REQUIRED) # This is necessary to run some build tools.
 find_package(ClangFormat)
 find_package(ClangCheck)
 find_package(ClangTidy)
@@ -40,9 +46,8 @@ find_package(SCCache)
 find_package(CCache)
 find_package(IWYU)
 
-# Dependencies
+# Dependencies -- These are all local FindXXX.cmake files
 find_package(Bullet COMPONENTS Collision SoftBody Dynamics Math)
-find_package(Python COMPONENTS Interpreter Development)
 find_package(PCRE2 COMPONENTS UTF8 UTF16 UTF32)
 find_package(WebSockets)
 find_package(MiniUPnPC)
@@ -63,15 +68,17 @@ find_package(Ogg)
 find_package(Vpx)
 find_package(PNG)
 
-option(WITH_TOOLS "Build the Godot editor" ON)
+option(WITH_EDITOR "Build the Godot editor" ON)
 
+# Binary Packaging Targets
 option(PACKAGE_DMG "Create a MacOS DMG Image")
-option(PACKAGE_APP "Create a Linux AppImage")
+option(PACKAGE_APP "Create a Linux AppImage") # not currently supported by CMake
 option(PACKAGE_DEB "Create a Debian Package")
 option(PACKAGE_RPM "Create an RPM Package")
 option(PACKAGE_MSI "Create a Windows MSI")
 option(PACKAGE_PKG "Create a FreeBSD pkg")
 
+# Source Distribution Targets
 option(ARCHIVE_TBZ2 "Create a .tar.bz2 archive")
 option(ARCHIVE_TGZ "Create a .tar.gz archive")
 option(ARCHIVE_TXZ "Create a .tar.xz archive")
@@ -79,16 +86,33 @@ option(ARCHIVE_TZ "Create a .tar.Z archive")
 option(ARCHIVE_ZIP "Create a .zip archive")
 option(ARCHIVE_7Z "Create a .7z archive")
 
-option(SANITIZE_UNDEFINED "Use the Undefined Behavior Sanitizer" OFF)
-option(SANITIZE_ADDRESS "Use the Address Aanitizer" OFF)
-option(SANITIZE_THREAD "Use the Thread Sanitizer" OFF)
+option(SANITIZE_SAFE_STACK "Use the SafeStack Sanitizer")
+option(SANITIZE_UNDEFINED "Use the Undefined Behavior Sanitizer")
+option(SANITIZE_COVERAGE "Use Code Coverage Sanitizer")
+option(SANITIZE_DATAFLOW "Use the DataFlow Sanitizer")
+option(SANITIZE_ADDRESS "Use the Address Aanitizer")
+option(SANITIZE_THREAD "Use the Thread Sanitizer")
+option(SANITIZE_MEMORY "Use the Memory Sanitizer")
+option(SANITIZE_LEAK "Use the Leak Sanitizer")
+option(SANITIZE_CFI "Use Control Flow Integrity")
 
-option(USE_LTO "Use link-time optimization" OFF)
-option(USE_SCCACHE "Use the SCCache compiler caching tool")
-option(USE_CCACHE "Use the CCache compiler caching tool")
+#option(ANALYZE_THREAD_SAFETY "Enable Thread Safety Analysis")
 
+# These tools will be used for development if desired by users
+option(USE_TOOL_CLANG_TIDY "Use the clang-tidy tool")
+option(USE_TOOL_CPPCHECK "Use CppCheck")
+option(USE_TOOL_SCCACHE "Use the SCCache compiler caching tool")
+option(USE_TOOL_CCACHE "Use the CCache compiler caching tool")
+option(USE_TOOL_IWYU "Use include-what-you-use")
+
+# Project wide compile time options
+option(WITH_COVERAGE "Compile with code coverage")
+option(WITH_OMP "Compile with OpenMP support")
+option(WITH_LTO "Compile with link-time optimization")
+
+# Disabling these will permit users to use prebuilt libraries on their own system
 option(USE_BUILTIN_LIBWEBSOCKETS "Use the built-in libwebsockets library" ON) #find_package
-option(USE_BUILTIN_THEKLA_ATLAS "Use the built-in thekla_atlas library" ON)
+option(USE_BUILTIN_THEKLA_ATLAS "Use the built-in thekla_atlas library" ON) #find_package
 option(USE_BUILTIN_MINIUPNPC "Use the built-in miniupnpc library" ON) #find_package
 option(USE_BUILTIN_LIBTHEORA "Use the built-in libtheora library" ON) #find_package
 option(USE_BUILTIN_LIBVORBIS "Use the built-in libvorbis library" ON) #find_package
@@ -107,6 +131,7 @@ option(USE_BUILTIN_ZLIB "Use the built-in ZLib library" ON) #find_package
 option(USE_BUILTIN_ZSTD "Use the built-in ZStd library" ON) #find_package
 option(USE_BUILTIN_ENET "Use the built-in ENet library" ON)
 
+# Build Features
 option(ENABLE_DEPRECATED "Enable deprecated features" ON)
 option(ENABLE_GDSCRIPT "Enable GDScript support" ON)
 option(ENABLE_MINIZIP "Enable ZIP Archive support (via minizip)" ON)
@@ -130,22 +155,35 @@ check_ipo_supported(RESULT HAS_IPO_SUPPORT LANGUAGES CXX C)
 check_headers(vector HAS_CXX_VECTOR LANGUAGE CXX)
 check_headers(map HAS_CXX_MAP LANGUAGE CXX)
 
-if (USE_SCCACHE AND SCCACHE_FOUND)
+if (USE_TOOL_SCCACHE AND SCCACHE_FOUND)
   set(CMAKE_CXX_COMPILER_LAUNCHER sccache)
   set(CMAKE_C_COMPILER_LAUNCHER sccache)
-elseif(USE_CCACHE AND CCACHE_FOUND)
+elseif(USE_TOOL_CCACHE AND CCACHE_FOUND)
   set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
   set(CMAKE_C_COMPILER_LAUNCHER ccache)
 endif()
 
-if (USE_IWYU AND IWYU_FOUND)
+if (USE_TOOL_IWYU AND IWYU_TOOL_FOUND)
   set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu)
   set(CMAKE_C_INCLUDE_WHAT_YOU_USE iwyu)
 endif()
 
-if (USE_CPPCHECK AND CPPCHECK_FOUND)
+if (USE_TOOL_CPPCHECK AND CPPCHECK_FOUND)
   set(CMAKE_CXX_CPPCHECK cppcheck)
   set(CMAKE_C_CPPCHECK cppcheck)
+endif()
+
+if (USE_TOOL_CLANG_TIDY AND CLANG_TIDY_FOUND)
+  set(CMAKE_CXX_CLANG_TIDY clang-tidy)
+  set(CMAKE_C_CLANG_TIDY clang-tidy)
+endif()
+
+if (ENABLE_MODULE_FREETYPE)
+  if (USE_BUILTIN_FREETYPE)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/freetype)
+  else ()
+    find_package(FreeType REQUIRED)
+  endif()
 endif()
 
 add_executable(godot WIN32 MACOSX_BUNDLE main/main.cpp)
@@ -272,7 +310,7 @@ target_link_libraries(godot-regex
 target_link_libraries(godot-visual-script PUBLIC godot-common godot-scene)
 target_link_libraries(godot-stb-vorbis PUBLIC godot-common)
 target_link_libraries(godot-gdscript PUBLIC godot-common)
-target_link_libraries(godot-scene PUBLIC godot-common)
+target_link_libraries(godot-scene PUBLIC godot-common $<TARGET_NAME_IF_EXISTS:FreeType::FreeType>)
 target_link_libraries(godot-dds PUBLIC godot-common)
 target_link_libraries(godot-svg PUBLIC godot-common nanosvg)
 
@@ -301,7 +339,7 @@ target_link_libraries(godot
     $<$<CXX_COMPILER_ID:MSVC>:d3d9>)
 
 if (ClangFormat_FOUND)
-  add_custom_target(format
+  add_custom_target(fmt
     COMMAND clang::format -i -style=file -p ${PROJECT_BINARY_DIR}
     COMMENT "Running clang-format"
     VERBATIM USES_TERMINAL
