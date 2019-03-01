@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
 include(FetchContent)
+FetchContent_Declare(ixm URL https://get.ixm.one)
+FetchContent_GetProperties(ixm)
+if (NOT ixm_POPULATED)
+  FetchContent_Populate(ixm)
+  add_subdirectory(${ixm_SOURCE_DIR} ${ixm_BINARY_DIR})
+endif()
 project(godot
   VERSION 3.1
   DESCRIPTION "The Godot Game Engine"
   HOMEPAGE_URL "https://godotengine.org/"
   LANGUAGES C CXX)
-
-add_subdirectory(../ixm ${CMAKE_BINARY_DIR}/ixm)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/packages)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -188,6 +192,108 @@ if (ENABLE_MODULE_FREETYPE)
     find_package(FreeType REQUIRED)
   endif()
 endif()
+
+if (NOT BULLET_FOUND OR USE_BUILTIN_BULLET)
+  add_library(Bullet INTERFACE)
+  add_library(BulletCollision)
+  add_library(BulletDynamics)
+  add_library(BulletInverseDynamics)
+  add_library(BulletSoftBody)
+  add_library(clew)
+  add_library(LinearMath)
+  add_library(BulletPrivate INTERFACE)
+
+  target_include_directories(BulletPrivate
+    INTERFACE ${PROJECT_SOURCE_DIR}/thirdparty/bullet)
+
+  target_link_libraries(BulletCollision PRIVATE BulletPrivate)
+  target_link_libraries(BulletDynamics PRIVATE BulletPrivate)
+  target_link_libraries(BulletInverseDynamics PRIVATE BulletPrivate)
+  target_link_libraries(BulletSoftBody PRIVATE BulletPrivate)
+  target_link_libraries(LinearMath PRIVATE BulletPrivate)
+
+
+  target_link_libraries(Bullet
+      INTERFACE
+        BulletCollision
+        BulletDynamics
+        BulletInverseDynamics
+        BulletSoftBody)
+
+  target_sources(BulletCollision PRIVATE
+    thirdparty/bullet/BulletCollision/BroadphaseCollision/*.cpp
+    thirdparty/bullet/BulletCollision/CollisionDispatch/*.cpp
+    thirdparty/bullet/BulletCollision/CollisionShapes/*.cpp
+    thirdparty/bullet/BulletCollision/Gimpact/*.cpp
+    thirdparty/bullet/BulletCollision/NarrowPhaseCollision/*.cpp)
+
+  target_sources(BulletDynamics RECURSE PRIVATE
+    thirdparty/bullet/BulletDynamics/*.cpp)
+
+  target_sources(BulletInverseDynamics RECURSE PRIVATE
+    thirdparty/bullet/BulletInverseDynamics/*.cpp)
+
+  target_sources(BulletSoftBody RECURSE PRIVATE
+    thirdparty/bullet/BulletSoftBody/*.cpp)
+
+  target_sources(clew PRIVATE thirdparty/bullet/clew/clew.c)
+  target_sources(LinearMath PRIVATE thirdparty/bullet/LinearMath/*.cpp)
+endif()
+
+if (NOT FREETYPE_FOUND OR USE_BUILTIN_FREETYPE)
+  add_library(freetype)
+  add_library(FreeType::FreeType ALIAS freetype)
+  target_sources(freetype
+    PRIVATE
+      thirdparty/freetype/src/autofit/autofit.c
+      thirdparty/freetype/src/base/ftapi.c
+      thirdparty/freetype/src/base/ftbase.c
+      thirdparty/freetype/src/base/ftbbox.c
+      thirdparty/freetype/src/base/ftbdf.c
+      thirdparty/freetype/src/base/ftbitmap.c
+      thirdparty/freetype/src/base/ftcid.c
+      thirdparty/freetype/src/base/ftdebug.c
+      thirdparty/freetype/src/base/ftfstype.c
+      thirdparty/freetype/src/base/ftgasp.c
+      thirdparty/freetype/src/base/ftglyph.c
+      thirdparty/freetype/src/base/ftgxval.c
+      thirdparty/freetype/src/base/ftinit.c
+      thirdparty/freetype/src/base/ftmm.c
+      thirdparty/freetype/src/base/ftotval.c
+      thirdparty/freetype/src/base/ftpatent.c
+      thirdparty/freetype/src/base/ftpfr.c
+      thirdparty/freetype/src/base/ftstroke.c
+      thirdparty/freetype/src/base/ftsynth.c
+      thirdparty/freetype/src/base/ftsystem.c
+      thirdparty/freetype/src/base/fttype1.c
+      thirdparty/freetype/src/base/ftwinfnt.c
+      thirdparty/freetype/src/bdf/bdf.c
+      thirdparty/freetype/src/bzip2/ftbzip2.c
+      thirdparty/freetype/src/cache/ftcache.c
+      thirdparty/freetype/src/cff/cff.c
+      thirdparty/freetype/src/cid/type1cid.c
+      thirdparty/freetype/src/gxvalid/gxvalid.c
+      thirdparty/freetype/src/gzip/ftgzip.c
+      thirdparty/freetype/src/lzw/ftlzw.c
+      thirdparty/freetype/src/otvalid/otvalid.c
+      thirdparty/freetype/src/pcf/pcf.c
+      thirdparty/freetype/src/pfr/pfr.c
+      thirdparty/freetype/src/psaux/psaux.c
+      thirdparty/freetype/src/pshinter/pshinter.c
+      thirdparty/freetype/src/psnames/psnames.c
+      thirdparty/freetype/src/raster/raster.c
+      thirdparty/freetype/src/smooth/smooth.c
+      thirdparty/freetype/src/truetype/truetype.c
+      thirdparty/freetype/src/type1/type1.c
+      thirdparty/freetype/src/type42/type42.c
+      thirdparty/freetype/src/winfonts/winfnt.c)
+    target_compile_definitions(freetype
+      PRIVATE
+        FT2_BUILD_LIBRARY
+        FT_CONFIG_OPTION_USE_PNG)
+  target_include_directories(freetype PUBLIC thirdparty/freetype/include)
+endif()
+
 
 add_executable(godot WIN32 MACOSX_BUNDLE main/main.cpp)
 

@@ -63,6 +63,7 @@ if (BULLET_MATH_LIBRARY)
     INCLUDES ${BULLET_INCLUDE_DIR})
 endif()
 
+if (TARGET Bullet::Collision OR TARGET Bullet::Dynamics OR TARGET Bullet::SoftBody OR TARGET Bullet::Math)
 add_library(Bullet INTERFACE)
 target_link_libraries(Bullet
   INTERFACE
@@ -74,3 +75,4 @@ target_link_libraries(Bullet
 
 hide(BULLET COLLISION_LIBRARY SOFTBODY_LIBRARY DYNAMICS_LIBRARY MATH_LIBRARY)
 hide(BULLET INCLUDE_DIR)
+endif()

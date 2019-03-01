@@ -1,0 +1,14 @@
+/* THIS FILE IS GENERATED. DO NOT EDIT */
+#ifndef _EDITOR_AUTHORS_H
+#define _EDITOR_AUTHORS_H
+
+{%- for name, text in sections -%}
+
+const char* const {{name}}[] = {
+  {{text|join(',\n\t')}},
+  NULL
+};
+
+{%- endfor -%}
+
+#endif /* _EDITOR_AUTHORS_H */

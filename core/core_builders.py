@@ -40,6 +40,7 @@ def make_certs_header(target, source, env):
     f.close()
 
 
+# TODO: use a modified form of the regex above
 def make_authors_header(target, source, env):
     sections = ["Project Founders", "Lead Developer", "Project Manager", "Developers"]
     sections_id = ["AUTHORS_FOUNDERS", "AUTHORS_LEAD_DEVELOPERS", "AUTHORS_PROJECT_MANAGERS", "AUTHORS_DEVELOPERS"]
@@ -84,6 +85,10 @@ def make_authors_header(target, source, env):
     f.close()
 
 
+# TODO: A simple set of regular expressions could be used for this.
+# Something like:
+# for name in sections:
+#   regex = re.compile(r'## {}$([^##]*)'.format(name), re.MULTI)
 def make_donors_header(target, source, env):
     sections = ["Platinum sponsors", "Gold sponsors", "Mini sponsors",
                 "Gold donors", "Silver donors", "Bronze donors"]

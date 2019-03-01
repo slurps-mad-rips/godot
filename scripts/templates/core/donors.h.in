@@ -1,0 +1,18 @@
+/* THIS FILE IS GENERATED DO NOT EDIT */
+#ifndef _EDITOR_DONORS_H
+#define _EDITOR_DONORS_H
+
+{% for section, names in sections %}
+const char* const {{section}}[] = {
+  {{names|join(',\n')}}
+  NULL,
+};
+{% endfor %}
+
+const char* const DONORS_BRONZE[] = {
+  "There are even more donors that support the project with a small monthly donation.",
+  "Every bit counts and we thank every one of them for their amazing support!"
+  NULL,
+};
+
+#endif /* _EDITOR_DONORS_H */
