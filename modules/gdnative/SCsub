@@ -57,7 +57,6 @@ env_gdnative.add_source_files(env.modules_sources, [gensource])
 
 env.use_ptrcall = True
 
-
 if ARGUMENTS.get('gdnative_wrapper', False):
     gensource, = jinjafy(
         'gdnative_wrapper_code.gen.cpp',

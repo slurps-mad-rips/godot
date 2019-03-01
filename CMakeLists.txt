@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
+include(FetchContent)
 project(godot
   VERSION 3.1
   DESCRIPTION "The Godot Game Engine"
   HOMEPAGE_URL "https://godotengine.org/"
   LANGUAGES C CXX)
+
+add_subdirectory(../ixm ${CMAKE_BINARY_DIR}/ixm)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/packages)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
@@ -61,11 +64,11 @@ find_package(Vorbis)
 
 # TODO: Rewrite all Find<3CharFileExtension> modules to be Uppercased
 # File Formats
-find_package(ZLib)
+find_package(ZLIB)
 find_package(WebM)
 find_package(Opus)
 find_package(Ogg)
-find_package(Vpx)
+find_package(VPX)
 find_package(PNG)
 
 option(WITH_EDITOR "Build the Godot editor" ON)
@@ -266,20 +269,20 @@ target_compile_definitions(godot-common
     SVG_ENABLED
     XML_ENABLED)
 
-target_glob_sources(regex32 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
-target_glob_sources(regex16 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
-target_glob_sources(nanosvg PRIVATE thirdparty/nanosvg/*.cc)
+target_sources(regex32 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
+target_sources(regex16 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
+target_sources(nanosvg PRIVATE thirdparty/nanosvg/*.cc)
 
-target_glob_sources(godot-visual-script PRIVATE modules/visual_script/*.cpp)
-target_glob_sources(godot-stb-vorbis PRIVATE modules/stb_vorbis/*.cpp)
-target_glob_sources(godot-gdscript PRIVATE modules/gdscript/*.cpp)
-target_glob_sources(godot-regex PRIVATE modules/regex/*.cpp)
-target_glob_sources(godot-svg PRIVATE modules/svg/*.cpp)
-target_glob_sources(godot-dds PRIVATE modules/dds/*.cpp)
+target_sources(godot-visual-script PRIVATE modules/visual_script/*.cpp)
+target_sources(godot-stb-vorbis PRIVATE modules/stb_vorbis/*.cpp)
+target_sources(godot-gdscript PRIVATE modules/gdscript/*.cpp)
+target_sources(godot-regex PRIVATE modules/regex/*.cpp)
+target_sources(godot-svg PRIVATE modules/svg/*.cpp)
+target_sources(godot-dds PRIVATE modules/dds/*.cpp)
 
-target_glob_sources(godot-scene PRIVATE scene/*.cpp)
+target_sources(godot-scene PRIVATE scene/*.cpp)
 
-target_glob_sources(godot-core
+target_sources(godot-core
   PRIVATE
     servers/*.cpp
     modules/*.cpp
@@ -288,14 +291,13 @@ target_glob_sources(godot-core
     scene/*.cpp
     core/*.cpp)
 
-target_glob_sources(godot PRIVATE main/*.cpp main/tests/*.cpp)
+target_sources(godot PRIVATE main/*.cpp main/tests/*.cpp)
 
 target_compile_options(godot-common
   INTERFACE
     $<$<CXX_COMPILER_ID:GNU>:-Wno-return-local-addr>
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Debug>>:-ggdb>
-    $<$<AND:$<CXX_COMPILER_ID:AppleClang>,$<CONFIG:Debug>>:-glldb>
-)
+    $<$<AND:$<CXX_COMPILER_ID:AppleClang>,$<CONFIG:Debug>>:-glldb>)
 
 target_compile_options(godot-core
   PUBLIC
@@ -310,7 +312,10 @@ target_link_libraries(godot-regex
 target_link_libraries(godot-visual-script PUBLIC godot-common godot-scene)
 target_link_libraries(godot-stb-vorbis PUBLIC godot-common)
 target_link_libraries(godot-gdscript PUBLIC godot-common)
-target_link_libraries(godot-scene PUBLIC godot-common $<TARGET_NAME_IF_EXISTS:FreeType::FreeType>)
+target_link_libraries(godot-scene
+  PUBLIC
+    godot-common
+    $<TARGET_NAME_IF_EXISTS:FreeType::FreeType>)
 target_link_libraries(godot-dds PUBLIC godot-common)
 target_link_libraries(godot-svg PUBLIC godot-common nanosvg)
 

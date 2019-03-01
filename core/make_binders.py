@@ -8,67 +8,70 @@ public:
 
 	$ifret R$ $ifnoret void$ (T::*method)($arg, P@$) $ifconst const$;
 #ifdef DEBUG_METHODS_ENABLED
-	virtual Variant::Type _gen_argument_type(int p_arg) const { return _get_argument_type(p_arg); }
+	virtual Variant::Type _gen_argument_type(int p_arg) const {
+            return _get_argument_type(p_arg);
+        }
 	Variant::Type _get_argument_type(int p_argument) const {
-		$ifret if (p_argument==-1) return (Variant::Type)GetTypeInfo<R>::VARIANT_TYPE;$
-		$arg if (p_argument==(@-1)) return (Variant::Type)GetTypeInfo<P@>::VARIANT_TYPE;
-		$
-		return Variant::NIL;
+	    $ifret if (p_argument==-1) return (Variant::Type)GetTypeInfo<R>::VARIANT_TYPE;$
+	    $arg if (p_argument==(@-1)) return (Variant::Type)GetTypeInfo<P@>::VARIANT_TYPE;
+	    $
+	    return Variant::NIL;
 	}
 	virtual PropertyInfo _gen_argument_type_info(int p_argument) const {
-		$ifret if (p_argument==-1) return GetTypeInfo<R>::get_class_info();$
-		$arg if (p_argument==(@-1)) return GetTypeInfo<P@>::get_class_info();
-		$
-		return PropertyInfo();
+	    $ifret if (p_argument==-1) return GetTypeInfo<R>::get_class_info();$
+	    $arg if (p_argument==(@-1)) return GetTypeInfo<P@>::get_class_info();
+	    $
+	    return PropertyInfo();
 	}
 #endif
 	virtual String get_instance_class() const {
-		return T::get_class_static();
+	    return T::get_class_static();
 	}
 
 	virtual Variant call(Object* p_object,const Variant** p_args,int p_arg_count, Variant::CallError& r_error) {
 
-		T *instance=Object::cast_to<T>(p_object);
-		r_error.error=Variant::CallError::CALL_OK;
-#ifdef DEBUG_METHODS_ENABLED
+	    T *instance=Object::cast_to<T>(p_object);
+	    r_error.error=Variant::CallError::CALL_OK;
 
-		ERR_FAIL_COND_V(!instance,Variant());
-		if (p_arg_count>get_argument_count()) {
-			r_error.error=Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
-			r_error.argument=get_argument_count();
-			return Variant();
+            #ifdef DEBUG_METHODS_ENABLED
 
-		}
-		if (p_arg_count<(get_argument_count()-get_default_argument_count())) {
+	    ERR_FAIL_COND_V(!instance,Variant());
+	    if (p_arg_count>get_argument_count()) {
+		r_error.error=Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
+		r_error.argument=get_argument_count();
+		return Variant();
 
-			r_error.error=Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;
-			r_error.argument=get_argument_count()-get_default_argument_count();
-			return Variant();
-		}
-		$arg CHECK_ARG(@);
-		$
-#endif
-		$ifret Variant ret = $(instance->*method)($arg, _VC(@)$);
-		$ifret return Variant(ret);$
-		$ifnoret return Variant();$
+	    }
+	    if (p_arg_count<(get_argument_count()-get_default_argument_count())) {
+
+		r_error.error=Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;
+		r_error.argument=get_argument_count()-get_default_argument_count();
+		return Variant();
+	    }
+	    $arg CHECK_ARG(@);
+	    $
+            #endif
+	    $ifret Variant ret = $(instance->*method)($arg, _VC(@)$);
+	    $ifret return Variant(ret);$
+	    $ifnoret return Variant();$
 	}
 
-#ifdef PTRCALL_ENABLED
+        #ifdef PTRCALL_ENABLED
 	virtual void ptrcall(Object*p_object,const void** p_args,void *r_ret) {
 
-		T *instance=Object::cast_to<T>(p_object);
-		$ifret PtrToArg<R>::encode( $ (instance->*method)($arg, PtrToArg<P@>::convert(p_args[@-1])$) $ifret ,r_ret)$ ;
+            T *instance=Object::cast_to<T>(p_object);
+	    $ifret PtrToArg<R>::encode( $ (instance->*method)($arg, PtrToArg<P@>::convert(p_args[@-1])$) $ifret ,r_ret)$ ;
 	}
-#endif
+        #endif
 	MethodBind$argc$$ifret R$$ifconst C$ () {
-#ifdef DEBUG_METHODS_ENABLED
-		_set_const($ifconst true$$ifnoconst false$);
-		_generate_argument_types($argc$);
-#else
-		set_argument_count($argc$);
-#endif
+            #ifdef DEBUG_METHODS_ENABLED
+	        _set_const($ifconst true$$ifnoconst false$);
+	        _generate_argument_types($argc$);
+            #else
+	        set_argument_count($argc$);
+            #endif
 
-		$ifret _set_returns(true); $
+	    $ifret _set_returns(true); $
 	};
 };
 
@@ -251,14 +254,15 @@ def run(target, source, env):
     for i in range(0, versions + 1):
 
         t = ""
-        t += make_version(template, i, versions, False, False)
         t += make_version(template_typed, i, versions, False, False)
-        t += make_version(template, i, versions, False, True)
         t += make_version(template_typed, i, versions, False, True)
-        t += make_version(template, i, versions, True, False)
         t += make_version(template_typed, i, versions, True, False)
-        t += make_version(template, i, versions, True, True)
         t += make_version(template_typed, i, versions, True, True)
+
+        t += make_version(template, i, versions, False, False)
+        t += make_version(template, i, versions, False, True)
+        t += make_version(template, i, versions, True, False)
+        t += make_version(template, i, versions, True, True)
         if (i >= versions_ext):
             text_ext += t
         else:

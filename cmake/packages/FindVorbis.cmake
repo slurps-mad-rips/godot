@@ -3,7 +3,11 @@ include(CheckComponent)
 include(ImportLibrary)
 include(PushFindState)
 
-find_package(Ogg REQUIRED)
+find_package(Ogg QUIET)
+
+if (NOT OGG_FOUND)
+  return()
+endif()
 
 push_find_state(Vorbis)
 find_library(VORBIS_ENCODER_LIBRARY NAMES vorbisenc ${FIND_OPTIONS})

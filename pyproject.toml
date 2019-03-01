@@ -2,7 +2,7 @@
 name = "godot"
 version = "0.1.0"
 description = "Godot Build System Tools and Scripts"
-authors = ["Your Name <you@example.com>"]
+authors = ["Izzy Muerte"]
 
 [tool.poetry.dependencies]
 python = "^3.5"

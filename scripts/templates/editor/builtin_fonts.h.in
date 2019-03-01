@@ -1,0 +1,12 @@
+/* THIS FILE IS GENERATED DO NOT EDIT */
+#ifndef _EDITOR_FONTS_H
+#define _EDITOR_FONTS_H
+
+{% for path, buffer, length in sources %}
+static const int _font_{{path.stem}}_size = {{length}};
+static const unsigned char _font_{{path.stem}}[] = {
+  {{buffer|join(',')}}
+};
+{% endfor %}
+
+#endif /* _EDITOR_FONTS_H */

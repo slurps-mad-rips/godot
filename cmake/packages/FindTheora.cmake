@@ -3,7 +3,11 @@ include(CheckComponent)
 include(ImportLibrary)
 include(PushFindState)
 
-find_package(Ogg REQUIRED)
+find_package(Ogg QUIET)
+
+if (NOT OGG_FOUND)
+  return()
+endif()
 
 push_find_state(Theora)
 find_library(THEORA_LIBRARY NAMES theora ${FIND_OPTIONS})
