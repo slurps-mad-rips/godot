@@ -2,17 +2,12 @@
 #ifndef _EDITOR_DONORS_H
 #define _EDITOR_DONORS_H
 
-{% for section, names in sections %}
+{% for section, names in sections.items() %}
 const char* const {{section}}[] = {
-  {{names|join(',\n')}}
-  NULL,
+  {{names | default(['']) | map('trim') | map('quote') | join(',\n\t')}},
+  NULL
 };
-{% endfor %}
 
-const char* const DONORS_BRONZE[] = {
-  "There are even more donors that support the project with a small monthly donation.",
-  "Every bit counts and we thank every one of them for their amazing support!"
-  NULL,
-};
+{% endfor %}
 
 #endif /* _EDITOR_DONORS_H */

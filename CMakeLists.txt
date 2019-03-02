@@ -48,6 +48,7 @@ find_package(CppCheck)
 find_package(SCCache)
 find_package(CCache)
 find_package(IWYU)
+find_package(Git REQUIRED)
 
 # Dependencies -- These are all local FindXXX.cmake files
 find_package(PCRE2 COMPONENTS UTF8 UTF16 UTF32)
@@ -137,10 +138,10 @@ option(USE_BUILTIN_LIBWEBP "Use the built-in libwebp library" ON) #find_package
 option(USE_BUILTIN_LIBOGG "Use the built-in libogg library" ON) #find_package
 option(USE_BUILTIN_LIBPNG "Use the built-in libpng library" ON) # find_package
 option(USE_BUILTIN_LIBVPX "Use the built-in libvpx library" ON) # find_package
-option(USE_BUILTIN_BULLET "Use the built-in Bullet library" ON) # find_package
+option(USE_BUILTIN_BULLET "Use the built-in Bullet library" ON)
 option(USE_BUILTIN_SQUISH "Use the built-in squish library" ON) # find_package
 option(USE_BUILTIN_RECAST "Use the built-in Recast library" ON) # find_package
-option(USE_BUILTIN_PCRE2 "Use the built-in PCRE2 library" ON) # find_package
+option(USE_BUILTIN_PCRE2 "Use the built-in PCRE2 library" ON)
 option(USE_BUILTIN_OPUS "Use the built-in Opus library" ON) #find_package
 option(USE_BUILTIN_ZLIB "Use the built-in ZLib library" ON) #find_package
 option(USE_BUILTIN_ZSTD "Use the built-in ZStd library" ON) #find_package
@@ -212,6 +213,7 @@ if (NOT ZLIB_FOUND OR USE_BUILTIN_ZLIB)
   add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/zlib)
 endif()
 
+# These builtins are *always* bundled
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/minizip)
 
@@ -241,7 +243,8 @@ target_include_directories(godot-common
     ${PROJECT_SOURCE_DIR}/core/math
     ${PROJECT_SOURCE_DIR}/core
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_BINARY_DIR}/generated)
+    ${PROJECT_BINARY_DIR}/generated
+    ${PROJECT_BINARY_DIR}/include)
 
 target_include_directories(godot-visual-script
   PUBLIC
@@ -262,7 +265,6 @@ target_compile_definitions(godot-common
     MODULE_GDSCRIPT_ENABLED
     GDSCRIPT_ENABLED
     FREETYPE_ENABLED
-    RTAUDIO_ENABLED
     TOOLS_ENABLED
     SVG_ENABLED
     XML_ENABLED)
@@ -310,6 +312,7 @@ target_link_libraries(godot-scene
   PUBLIC
     godot-common
     $<TARGET_NAME_IF_EXISTS:FreeType::FreeType>)
+
 target_link_libraries(godot-dds PUBLIC godot-common)
 target_link_libraries(godot-svg PUBLIC godot-common nanosvg)
 
@@ -336,3 +339,128 @@ target_link_libraries(godot
     $<$<CXX_COMPILER_ID:MSVC>:dinput8>
     $<$<CXX_COMPILER_ID:MSVC>:dsound>
     $<$<CXX_COMPILER_ID:MSVC>:d3d9>)
+
+# TODO: need to clean up all the generator programs...
+# they all do the same thing (more or less)
+# So we're just copy-pasting the basic file and then editing as needed.
+# it's gross and I hate it...
+####
+set(version-generated "${CMAKE_CURRENT_BINARY_DIR}/include/core/version_generated.gen.h")
+set(version-template "${PROJECT_SOURCE_DIR}/scripts/templates/core/version_generated.h.in")
+set(version-module "${PROJECT_SOURCE_DIR}/version.py")
+#####
+set(version-hash "${CMAKE_CURRENT_BINARY_DIR}/include/core/version_hash.gen.h")
+set(version-hash-template "${PROJECT_SOURCE_DIR}/scripts/templates/core/version_hash.h.in")
+####
+set(builtin-fonts "${CMAKE_CURRENT_BINARY_DIR}/include/builtin_fonts.gen.h")
+set(fonts-template "${PROJECT_SOURCE_DIR}/scripts/templates/editor/builtin_fonts.h.in")
+####
+set(doc-data-compressed "${CMAKE_CURRENT_BINARY_DIR}/include/doc_data_compressed.gen.h")
+set(doc-data-template "${PROJECT_SOURCE_DIR}/scripts/templates/editor/doc_data_compressed.h.in")
+####
+set(authors "${CMAKE_CURRENT_BINARY_DIR}/include/core/authors.gen.h")
+set(authors-template "${PROJECT_SOURCE_DIR}/scripts/templates/core/authors.h.in")
+####
+set(donors "${CMAKE_CURRENT_BINARY_DIR}/include/core/donors.gen.h")
+set(donors-template "${PROJECT_SOURCE_DIR}/scripts/templates/core/donors.h.in")
+
+glob(fonts FILES_ONLY thirdparty/fonts/*.ttf thirdparty/fonts/*.otf)
+glob(docs FILES_ONLY doc/classes/*.xml modules/*/doc_classes/*.xml)
+
+list(SORT fonts)
+list(SORT docs)
+
+# TODO: Cleanup the add_custom_command calls
+
+add_custom_command(OUTPUT "${donors}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/donors-generator.py
+  -o "${donors}"
+  -t "${donors-template}"
+  "${PROJECT_SOURCE_DIR}/DONORS.md"
+  MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/DONORS.md"
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/scripts/donors-generator.py
+    ${donors-template}
+  COMMENT "Generating donors header"
+  VERBATIM)
+
+add_custom_command(OUTPUT "${authors}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/authors-generator.py
+  -o "${authors}"
+  -t "${authors-template}"
+  "${PROJECT_SOURCE_DIR}/AUTHORS.md"
+  MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/AUTHORS.md"
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/scripts/authors-generator.py
+    ${authors-template}
+  COMMENT "Generating authors header"
+  VERBATIM)
+
+add_custom_command(OUTPUT "${doc-data-compressed}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/editor-docs-generator.py
+  -o "${doc-data-compressed}"
+  -t "${doc-data-template}"
+  ${docs}
+  MAIN_DEPENDENCY "${doc-data-template}"
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/scripts/editor-docs-generator.py
+    ${docs}
+  COMMENT "Generating documentation data"
+  VERBATIM)
+
+add_custom_command(OUTPUT "${builtin-fonts}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/editor-font-generator.py
+  -o "${builtin-fonts}"
+  -t "${fonts-template}"
+  ${fonts}
+  MAIN_DEPENDENCY "${fonts-template}"
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/scripts/editor-font-generator.py
+    ${fonts}
+  COMMENT "Generating builtin fonts"
+  VERBATIM)
+
+add_custom_command(OUTPUT "${version-generated}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/version-generator.py
+  -o ${version-generated}
+  -t ${version-template}
+  -i ${version-module}
+  MAIN_DEPENDENCY "${version-template}"
+  DEPENDS
+    "${PROJECT_SOURCE_DIR}/scripts/version-generator.py"
+    "${version-module}"
+  COMMENT "Generating version header"
+  VERBATIM)
+
+add_custom_command(OUTPUT "${version-hash}"
+  COMMAND Poetry::Poetry ARGS run python
+  ${PROJECT_SOURCE_DIR}/scripts/version-hash-generator.py
+  -o "${version-hash}"
+  -t "${version-hash-template}"
+  --git "${GIT_EXECUTABLE}"
+  MAIN_DEPENDENCY "${version-hash-template}"
+  DEPENDS "${PROJECT_SOURCE_DIR}/scripts/version-hash-generator.py"
+  COMMENT "Generating version hash header"
+  VERBATIM)
+
+add_custom_target(version-generated-h DEPENDS "${version-generated}")
+add_custom_target(version-hash-h DEPENDS "${version-hash}")
+add_custom_target(builtin-fonts-h DEPENDS "${builtin-fonts}")
+add_custom_target(doc-data-compressed-h DEPENDS "${doc-data-compressed}")
+add_custom_target(authors-h DEPENDS "${authors}")
+add_custom_target(donors-h DEPENDS "${donors}")
+
+add_dependencies(godot-core
+  doc-data-compressed-h
+  builtin-fonts-h
+
+  authors-h
+  donors-h
+
+  version-generated-h
+  version-hash-h)

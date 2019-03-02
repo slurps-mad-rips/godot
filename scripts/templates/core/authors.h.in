@@ -2,13 +2,13 @@
 #ifndef _EDITOR_AUTHORS_H
 #define _EDITOR_AUTHORS_H
 
-{%- for name, text in sections -%}
+{% for name, text in sections.items() %}
 
 const char* const {{name}}[] = {
-  {{text|join(',\n\t')}},
+  {{text | map('trim') | map('quote') | join(',\n\t')}},
   NULL
 };
 
-{%- endfor -%}
+{% endfor %}
 
 #endif /* _EDITOR_AUTHORS_H */

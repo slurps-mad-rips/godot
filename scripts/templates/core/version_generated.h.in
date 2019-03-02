@@ -3,10 +3,10 @@
 #define VERSION_NAME "{{version.name}}"
 #define VERSION_MAJOR {{version.major}}
 #define VERSION_MINOR {{version.minor}}
-{%- if version.patch is defined %}
+{% if version.patch is defined %}
 #define VERSION_PATCH {{version.patch}}
-{% endif -%}
-#define VERSION_STATUS {{version.status}}
-#define VERSION_BUILD {{build_name}}
+{% endif %}
+#define VERSION_STATUS "{{version.status}}"
+#define VERSION_BUILD {{build_name|default('"custom_build"')}}
 #define VERSION_MODULE_CONFIG "{{version.module_config}}{{module_version_string}}"
 #define VERSION_YEAR 2018

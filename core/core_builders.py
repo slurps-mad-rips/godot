@@ -40,7 +40,7 @@ def make_certs_header(target, source, env):
     f.close()
 
 
-# TODO: use a modified form of the regex above
+# TODO: use a modified form of the regex below
 def make_authors_header(target, source, env):
     sections = ["Project Founders", "Lead Developer", "Project Manager", "Developers"]
     sections_id = ["AUTHORS_FOUNDERS", "AUTHORS_LEAD_DEVELOPERS", "AUTHORS_PROJECT_MANAGERS", "AUTHORS_DEVELOPERS"]
