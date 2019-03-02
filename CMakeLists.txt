@@ -196,6 +196,11 @@ if (NOT WEBSOCKETS_FOUND OR USE_BUILTIN_LIBWEBSOCKETS)
   add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libwebsockets)
 endif()
 
+if (NOT VPX_FOUND OR USE_BUILTIN_LIBVPX)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libvpx)
+endif()
+
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
 
 ###############################################################################

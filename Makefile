@@ -4,6 +4,6 @@ all:
 	@cmake --build ./build $(ARGS)
 
 $(MAKECMDGOALS):
-	@cmake --build ./build --target $@ $(ARGS)
+	@cmake --build $(CURDIR)/build --target $@ -- $(ARGS)
 
 .PHONY: all $(MAKECMDGOALS)

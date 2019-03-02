@@ -1,5 +1,6 @@
 project(websockets LANGUAGES C)
 
+# TODO: Improve
 if (NOT TARGET mbedTLS)
   error("libwebsockets requires mbedTLS")
 endif()
