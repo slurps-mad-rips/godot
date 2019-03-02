@@ -200,6 +200,13 @@ if (NOT VPX_FOUND OR USE_BUILTIN_LIBVPX)
   add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libvpx)
 endif()
 
+if (NOT PNG_FOUND OR USE_BUILTIN_LIBPNG)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libpng)
+endif()
+
+if (NOT ZSTD_FOUND OR USE_BUILTIN_ZSTD)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/zstd)
+endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
 
