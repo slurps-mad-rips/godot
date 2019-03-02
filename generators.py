@@ -2,6 +2,8 @@ from pathlib import Path
 import sys
 import os
 
+from . import version
+
 class Generator:
     def __init__ (self, env):
         self.env = env

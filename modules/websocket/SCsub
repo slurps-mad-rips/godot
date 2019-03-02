@@ -65,7 +65,10 @@ if env['builtin_libwebsockets'] and not env["platform"] == "javascript": # alrea
         thirdparty_sources += ["misc/getifaddrs.c"]
 
     if env["platform"] == "windows" or env["platform"] == "uwp": # Winsock
-        thirdparty_sources += ["plat/lws-plat-win.c", helper_dir + "getopt.c", helper_dir + "getopt_long.c", helper_dir + "gettimeofday.c"]
+        thirdparty_sources += ["plat/lws-plat-win.c",
+            helper_dir + "getopt.c",
+            helper_dir + "getopt_long.c",
+            helper_dir + "gettimeofday.c"]
     else: # Unix socket
         thirdparty_sources += ["plat/lws-plat-unix.c"]
 

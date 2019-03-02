@@ -19,10 +19,7 @@ if (NOT CMAKE_BUILD_TYPE)
   message(FATAL_ERROR "CMAKE_BUILD_TYPE has not been explicitly set")
 endif()
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 include(CMakePackageConfigHelpers)
-include(TargetSupport)
 
 include(CheckStructHasMember)
 include(CheckIncludeFiles)
@@ -30,7 +27,6 @@ include(CheckIPOSupported)
 
 # Custom Modules Located here
 include(DependentOption)
-include(BuildType)
 
 include(CheckSourceCompiles)
 include(CheckSourceRuns)
@@ -44,7 +40,7 @@ find_package(PkgConfig)
 
 # Tools
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
-find_package(Poetry REQUIRED) # This is necessary to run some build tools.
+find_package(Poetry REQUIRED) # This lets us have (more or less) hermetic builds
 find_package(ClangFormat)
 find_package(ClangCheck)
 find_package(ClangTidy)
@@ -54,7 +50,6 @@ find_package(CCache)
 find_package(IWYU)
 
 # Dependencies -- These are all local FindXXX.cmake files
-find_package(Bullet COMPONENTS Collision SoftBody Dynamics Math)
 find_package(PCRE2 COMPONENTS UTF8 UTF16 UTF32)
 find_package(WebSockets)
 find_package(MiniUPnPC)
@@ -72,8 +67,20 @@ find_package(ZLIB)
 find_package(WebM)
 find_package(Opus)
 find_package(Ogg)
+
+###############################################################################
 find_package(VPX)
 find_package(PNG)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (TARGET SCCache::SCCache)
+  get_property(CMAKE_CXX_COMPILER_LAUNCHER
+    TARGET SCCache::SCCache
+    PROPERTY IMPORTED_LOCATION)
+  get_property(CMAKE_C_COMPILER_LAUNCHER
+    TARGET SCCache::SCCache
+    PROPERTY IMPORTED_LOCATION)
+endif()
 
 option(WITH_EDITOR "Build the Godot editor" ON)
 
@@ -93,29 +100,30 @@ option(ARCHIVE_TZ "Create a .tar.Z archive")
 option(ARCHIVE_ZIP "Create a .zip archive")
 option(ARCHIVE_7Z "Create a .7z archive")
 
-option(SANITIZE_SAFE_STACK "Use the SafeStack Sanitizer")
-option(SANITIZE_UNDEFINED "Use the Undefined Behavior Sanitizer")
-option(SANITIZE_COVERAGE "Use Code Coverage Sanitizer")
-option(SANITIZE_DATAFLOW "Use the DataFlow Sanitizer")
-option(SANITIZE_ADDRESS "Use the Address Aanitizer")
-option(SANITIZE_THREAD "Use the Thread Sanitizer")
-option(SANITIZE_MEMORY "Use the Memory Sanitizer")
-option(SANITIZE_LEAK "Use the Leak Sanitizer")
-option(SANITIZE_CFI "Use Control Flow Integrity")
+# TODO
+#option(SANITIZE_SAFE_STACK "Use the SafeStack Sanitizer")
+#option(SANITIZE_UNDEFINED "Use the Undefined Behavior Sanitizer")
+#option(SANITIZE_COVERAGE "Use Code Coverage Sanitizer")
+#option(SANITIZE_DATAFLOW "Use the DataFlow Sanitizer")
+#option(SANITIZE_ADDRESS "Use the Address Aanitizer")
+#option(SANITIZE_THREAD "Use the Thread Sanitizer")
+#option(SANITIZE_MEMORY "Use the Memory Sanitizer")
+#option(SANITIZE_LEAK "Use the Leak Sanitizer")
+#option(SANITIZE_CFI "Use Control Flow Integrity")
 
 #option(ANALYZE_THREAD_SAFETY "Enable Thread Safety Analysis")
 
 # These tools will be used for development if desired by users
-option(USE_TOOL_CLANG_TIDY "Use the clang-tidy tool")
-option(USE_TOOL_CPPCHECK "Use CppCheck")
-option(USE_TOOL_SCCACHE "Use the SCCache compiler caching tool")
-option(USE_TOOL_CCACHE "Use the CCache compiler caching tool")
-option(USE_TOOL_IWYU "Use include-what-you-use")
+#option(USE_TOOL_CLANG_TIDY "Use the clang-tidy tool")
+#option(USE_TOOL_CPPCHECK "Use CppCheck")
+#option(USE_TOOL_SCCACHE "Use the SCCache compiler caching tool")
+#option(USE_TOOL_CCACHE "Use the CCache compiler caching tool")
+#option(USE_TOOL_IWYU "Use include-what-you-use")
 
 # Project wide compile time options
-option(WITH_COVERAGE "Compile with code coverage")
-option(WITH_OMP "Compile with OpenMP support")
-option(WITH_LTO "Compile with link-time optimization")
+#option(WITH_COVERAGE "Compile with code coverage")
+#option(WITH_OMP "Compile with OpenMP support")
+#option(WITH_LTO "Compile with link-time optimization")
 
 # Disabling these will permit users to use prebuilt libraries on their own system
 option(USE_BUILTIN_LIBWEBSOCKETS "Use the built-in libwebsockets library" ON) #find_package
@@ -162,138 +170,35 @@ check_ipo_supported(RESULT HAS_IPO_SUPPORT LANGUAGES CXX C)
 check_headers(vector HAS_CXX_VECTOR LANGUAGE CXX)
 check_headers(map HAS_CXX_MAP LANGUAGE CXX)
 
-if (USE_TOOL_SCCACHE AND SCCACHE_FOUND)
-  set(CMAKE_CXX_COMPILER_LAUNCHER sccache)
-  set(CMAKE_C_COMPILER_LAUNCHER sccache)
-elseif(USE_TOOL_CCACHE AND CCACHE_FOUND)
-  set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-  set(CMAKE_C_COMPILER_LAUNCHER ccache)
-endif()
-
-if (USE_TOOL_IWYU AND IWYU_TOOL_FOUND)
-  set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE iwyu)
-  set(CMAKE_C_INCLUDE_WHAT_YOU_USE iwyu)
-endif()
-
-if (USE_TOOL_CPPCHECK AND CPPCHECK_FOUND)
-  set(CMAKE_CXX_CPPCHECK cppcheck)
-  set(CMAKE_C_CPPCHECK cppcheck)
-endif()
-
-if (USE_TOOL_CLANG_TIDY AND CLANG_TIDY_FOUND)
-  set(CMAKE_CXX_CLANG_TIDY clang-tidy)
-  set(CMAKE_C_CLANG_TIDY clang-tidy)
-endif()
-
-if (ENABLE_MODULE_FREETYPE)
-  if (USE_BUILTIN_FREETYPE)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/freetype)
-  else ()
-    find_package(FreeType REQUIRED)
-  endif()
-endif()
+###############################################################################
 
 if (NOT BULLET_FOUND OR USE_BUILTIN_BULLET)
-  add_library(Bullet INTERFACE)
-  add_library(BulletCollision)
-  add_library(BulletDynamics)
-  add_library(BulletInverseDynamics)
-  add_library(BulletSoftBody)
-  add_library(clew)
-  add_library(LinearMath)
-  add_library(BulletPrivate INTERFACE)
-
-  target_include_directories(BulletPrivate
-    INTERFACE ${PROJECT_SOURCE_DIR}/thirdparty/bullet)
-
-  target_link_libraries(BulletCollision PRIVATE BulletPrivate)
-  target_link_libraries(BulletDynamics PRIVATE BulletPrivate)
-  target_link_libraries(BulletInverseDynamics PRIVATE BulletPrivate)
-  target_link_libraries(BulletSoftBody PRIVATE BulletPrivate)
-  target_link_libraries(LinearMath PRIVATE BulletPrivate)
-
-
-  target_link_libraries(Bullet
-      INTERFACE
-        BulletCollision
-        BulletDynamics
-        BulletInverseDynamics
-        BulletSoftBody)
-
-  target_sources(BulletCollision PRIVATE
-    thirdparty/bullet/BulletCollision/BroadphaseCollision/*.cpp
-    thirdparty/bullet/BulletCollision/CollisionDispatch/*.cpp
-    thirdparty/bullet/BulletCollision/CollisionShapes/*.cpp
-    thirdparty/bullet/BulletCollision/Gimpact/*.cpp
-    thirdparty/bullet/BulletCollision/NarrowPhaseCollision/*.cpp)
-
-  target_sources(BulletDynamics RECURSE PRIVATE
-    thirdparty/bullet/BulletDynamics/*.cpp)
-
-  target_sources(BulletInverseDynamics RECURSE PRIVATE
-    thirdparty/bullet/BulletInverseDynamics/*.cpp)
-
-  target_sources(BulletSoftBody RECURSE PRIVATE
-    thirdparty/bullet/BulletSoftBody/*.cpp)
-
-  target_sources(clew PRIVATE thirdparty/bullet/clew/clew.c)
-  target_sources(LinearMath PRIVATE thirdparty/bullet/LinearMath/*.cpp)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/bullet)
 endif()
 
 if (NOT FREETYPE_FOUND OR USE_BUILTIN_FREETYPE)
-  add_library(freetype)
-  add_library(FreeType::FreeType ALIAS freetype)
-  target_sources(freetype
-    PRIVATE
-      thirdparty/freetype/src/autofit/autofit.c
-      thirdparty/freetype/src/base/ftapi.c
-      thirdparty/freetype/src/base/ftbase.c
-      thirdparty/freetype/src/base/ftbbox.c
-      thirdparty/freetype/src/base/ftbdf.c
-      thirdparty/freetype/src/base/ftbitmap.c
-      thirdparty/freetype/src/base/ftcid.c
-      thirdparty/freetype/src/base/ftdebug.c
-      thirdparty/freetype/src/base/ftfstype.c
-      thirdparty/freetype/src/base/ftgasp.c
-      thirdparty/freetype/src/base/ftglyph.c
-      thirdparty/freetype/src/base/ftgxval.c
-      thirdparty/freetype/src/base/ftinit.c
-      thirdparty/freetype/src/base/ftmm.c
-      thirdparty/freetype/src/base/ftotval.c
-      thirdparty/freetype/src/base/ftpatent.c
-      thirdparty/freetype/src/base/ftpfr.c
-      thirdparty/freetype/src/base/ftstroke.c
-      thirdparty/freetype/src/base/ftsynth.c
-      thirdparty/freetype/src/base/ftsystem.c
-      thirdparty/freetype/src/base/fttype1.c
-      thirdparty/freetype/src/base/ftwinfnt.c
-      thirdparty/freetype/src/bdf/bdf.c
-      thirdparty/freetype/src/bzip2/ftbzip2.c
-      thirdparty/freetype/src/cache/ftcache.c
-      thirdparty/freetype/src/cff/cff.c
-      thirdparty/freetype/src/cid/type1cid.c
-      thirdparty/freetype/src/gxvalid/gxvalid.c
-      thirdparty/freetype/src/gzip/ftgzip.c
-      thirdparty/freetype/src/lzw/ftlzw.c
-      thirdparty/freetype/src/otvalid/otvalid.c
-      thirdparty/freetype/src/pcf/pcf.c
-      thirdparty/freetype/src/pfr/pfr.c
-      thirdparty/freetype/src/psaux/psaux.c
-      thirdparty/freetype/src/pshinter/pshinter.c
-      thirdparty/freetype/src/psnames/psnames.c
-      thirdparty/freetype/src/raster/raster.c
-      thirdparty/freetype/src/smooth/smooth.c
-      thirdparty/freetype/src/truetype/truetype.c
-      thirdparty/freetype/src/type1/type1.c
-      thirdparty/freetype/src/type42/type42.c
-      thirdparty/freetype/src/winfonts/winfnt.c)
-    target_compile_definitions(freetype
-      PRIVATE
-        FT2_BUILD_LIBRARY
-        FT_CONFIG_OPTION_USE_PNG)
-  target_include_directories(freetype PUBLIC thirdparty/freetype/include)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/freetype)
 endif()
 
+if (NOT PCRE2_FOUND OR USE_BUILTIN_PCRE2)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/pcre2)
+endif()
+
+if (NOT OGG_FOUND OR USE_BUILTIN_OGG)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libogg)
+endif()
+
+if (NOT MBEDTLS_FOUND OR USE_BUILTIN_MBEDTLS)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/mbedtls)
+endif()
+
+if (NOT WEBSOCKETS_FOUND OR USE_BUILTIN_LIBWEBSOCKETS)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/libwebsockets)
+endif()
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
+
+###############################################################################
 
 add_executable(godot WIN32 MACOSX_BUNDLE main/main.cpp)
 
@@ -307,10 +212,6 @@ add_library(godot-scene)
 add_library(godot-core)
 add_library(godot-svg)
 add_library(godot-dds)
-
-add_library(regex32)
-add_library(regex16)
-add_library(nanosvg)
 
 # Driver checks/notes -- move to elsewhere
 check_include_files("mtent.h" HAVE_MNTENT LANGUAGE C)
@@ -335,32 +236,6 @@ target_include_directories(godot-scene
     ${PROJECT_SOURCE_DIR}/scene/main
     ${PROJECT_SOURCE_DIR}/scene)
 
-target_include_directories(regex32
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/thirdparty/pcre2/src)
-
-target_include_directories(regex16
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/thirdparty/pcre2/src)
-
-target_include_directories(nanosvg
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
-
-target_compile_definitions(regex32
-  PUBLIC
-    PCRE2_CODE_UNIT_WIDTH=32
-    PCRE2_STATIC
-    HAVE_CONFIG_H
-    SUPPORT_JIT=0)
-
-target_compile_definitions(regex16
-  PUBLIC
-    PCRE2_CODE_UNIT_WIDTH=16
-    PCRE2_STATIC
-    HAVE_CONFIG_H
-    SUPPORT_JIT=0)
-
 target_compile_definitions(godot-common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG_MEMORY_ENABLED>
@@ -374,10 +249,6 @@ target_compile_definitions(godot-common
     TOOLS_ENABLED
     SVG_ENABLED
     XML_ENABLED)
-
-target_sources(regex32 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
-target_sources(regex16 PRIVATE thirdparty/pcre2/src/*[^misc][^match].c)
-target_sources(nanosvg PRIVATE thirdparty/nanosvg/*.cc)
 
 target_sources(godot-visual-script PRIVATE modules/visual_script/*.cpp)
 target_sources(godot-stb-vorbis PRIVATE modules/stb_vorbis/*.cpp)
@@ -448,43 +319,3 @@ target_link_libraries(godot
     $<$<CXX_COMPILER_ID:MSVC>:dinput8>
     $<$<CXX_COMPILER_ID:MSVC>:dsound>
     $<$<CXX_COMPILER_ID:MSVC>:d3d9>)
-
-if (ClangFormat_FOUND)
-  add_custom_target(fmt
-    COMMAND clang::format -i -style=file -p ${PROJECT_BINARY_DIR}
-    COMMENT "Running clang-format"
-    VERBATIM USES_TERMINAL
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-endif()
-
-if (ClangTidy_FOUND)
-  add_custom_target(tidy
-    COMMAND clang::tidy -p ${PROJECT_BINARY_DIR}
-    COMMENT "Running clang-tidy"
-    VERBATIM USES_TERMINAL
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-endif()
-
-if (ClangCheck_FOUND)
-  add_custom_target(check
-    COMMAND clang::check -p ${PROJECT_BINARY_DIR}
-    COMMENT "Running clang-check"
-    VERBATIM USES_TERMINAL
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-endif()
-
-if (IWYU_FOUND)
-  add_custom_target(iwyu
-    COMMAND iwyu
-    COMMENT "Running include-what-you-use"
-    VERBATIM USES_TERMINAL
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-endif()
-
-if (BLOATY_FOUND)
-  add_custom_target(report-bloat
-    COMMAND bloaty
-    COMMENT "Running bloaty mcbloatface"
-    VERBATIME USES_TERMINAL
-    WORKING_DIRECTORTY ${PROJECT_SOURCE_DIR})
-endif()

@@ -43,6 +43,7 @@ btContinuousConvexCollision::btContinuousConvexCollision(const btConvexShape* co
 
 /// This maximum should not be necessary. It allows for untested/degenerate cases in production code.
 /// You don't want your game ever to lock-up.
+#undef  MAX_ITERATIONS
 #define MAX_ITERATIONS 64
 
 void btContinuousConvexCollision::computeClosestPoints(const btTransform& transA, const btTransform& transB, btPointCollector& pointCollector)
