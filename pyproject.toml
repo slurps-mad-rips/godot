@@ -7,6 +7,7 @@ authors = ["Izzy Muerte"]
 [tool.poetry.dependencies]
 python = "^3.5"
 Jinja2 = "^2.10"
+python-debian = "^0.1.34"
 
 [tool.poetry.dev-dependencies]
 cmake = "^3.12"

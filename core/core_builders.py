@@ -85,10 +85,6 @@ def make_authors_header(target, source, env):
     f.close()
 
 
-# TODO: A simple set of regular expressions could be used for this.
-# Something like:
-# for name in sections:
-#   regex = re.compile(r'## {}$([^##]*)'.format(name), re.MULTI)
 def make_donors_header(target, source, env):
     sections = ["Platinum sponsors", "Gold sponsors", "Mini sponsors",
                 "Gold donors", "Silver donors", "Bronze donors"]
