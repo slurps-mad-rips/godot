@@ -208,7 +208,12 @@ if (NOT ZSTD_FOUND OR USE_BUILTIN_ZSTD)
   add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/zstd)
 endif()
 
+if (NOT ZLIB_FOUND OR USE_BUILTIN_ZLIB)
+  add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/zlib)
+endif()
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/nanosvg)
+add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/minizip)
 
 ###############################################################################
 
