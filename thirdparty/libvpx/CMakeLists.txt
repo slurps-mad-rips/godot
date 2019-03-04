@@ -1,6 +1,10 @@
 project(libvpx LANGUAGES C ASM_NASM)
 
-set(is-amd64 $<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>)
+genex(is-amd64 $<OR:
+  $<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>,
+  $<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},AMD64>
+>)
+
 set(is-x86 $<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86>)
 
 # TODO: Check for mmx, sse2, ssse3, avx2 compile time support?

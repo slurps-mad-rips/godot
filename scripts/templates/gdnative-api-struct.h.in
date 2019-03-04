@@ -6,6 +6,7 @@
 #include <gdnative/gdnative.h>
 #include <android/godot_android.h>
 #include <arvr/godot_arvr.h>
+#include <net/godot_net.h>
 #include <nativescript/godot_nativescript.h>
 #include <pluginscript/godot_pluginscript.h>
 #include <videodecoder/godot_videodecoder.h>
